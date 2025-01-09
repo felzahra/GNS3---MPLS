@@ -1,0 +1,912 @@
+!London
+conf t
+ipv6 unicast-routing
+ip route 0.0.0.0 0.0.0.0 f2/1
+router bgp 20000
+address-family ipv4 unicast
+neighbor 4.20.20.2 remote-as 9000
+neighbor 4.20.20.10 remote-as 30000
+neighbor 4.20.20.6 remote-as 9000
+neighbor 4.20.20.2 default-originate
+neighbor 4.20.20.10 default-originate
+neighbor 4.20.20.6 default-originate
+network 200.100.1.0 mask 255.255.255.0 !L1
+network 200.200.1.0 mask 255.255.255.0 !L2
+
+address-family ipv6 unicast
+neighbor 2001:420:0::2 remote-as 9000   !Porto
+neighbor 2001:420:0::2 default-originate
+neighbor 2001:420:0::2 activate
+neighbor 2001:420:4::6 remote-as 9000   !Lisboa
+neighbor 2001:420:4::6 default-originate
+neighbor 2001:420:4::6 activate
+neighbor 2001:420:8::10 remote-as 30000   !Sintra
+neighbor 2001:420:8::10 default-originate
+neighbor 2001:420:8::10 activate
+network 2100:200:100::/64
+network 2100:200:200::/64
+exit
+
+int f1/1
+ip add 200.100.1.1 255.255.255.0
+ipv6 add 2100:200:100::1/64
+no shut
+ipv6 enable
+int f2/0
+ip add 200.200.1.1 255.255.255.0
+ipv6 add 2100:200:200::1/64
+no shut
+ipv6 enable
+int f1/0
+ip add 4.20.20.1 255.255.255.252
+ipv6 add 2001:420:0::1/64
+no shut
+ipv6 enable
+int f0/1
+ip add 4.20.20.5 255.255.255.252
+ipv6 add 2001:420:4::5/64
+no shut
+ipv6 enable
+int f0/0
+ip add 4.20.20.9 255.255.255.252
+ipv6 add 2001:420:8::9/64
+no shut
+ipv6 enable
+int f2/1
+ip add 6.6.6.1 255.255.255.0
+ipv6 add 666:666:666::6/64
+no shut
+ipv6 enable
+int lo0
+ip add 10.0.8.1 255.255.255.255
+no shut
+end
+write mem
+
+---------------------------------------------------------------------
+
+!Sintra
+conf t
+ipv6 unicast-routing
+router bgp 30000
+address-family ipv4 unicast
+neighbor 4.20.20.9 remote-as 20000
+neighbor 4.20.20.14 remote-as 9000
+network 210.0.1.0 mask 255.255.255.0
+
+address-family ipv6 unicast
+neighbor 2001:420:8::9 remote-as 20000
+neighbor 2001:420:8::9 activate
+neighbor 2001:420:12::14 remote-as 9000
+neighbor 2001:420:12::14 activate
+network 2100:210::/48
+exit
+
+int f1/0
+ip add 210.0.1.1 255.255.255.0
+ipv6 add 2100:210:0::1/64
+ipv6 enable
+no shut
+int f0/1
+ip add 4.20.20.13 255.255.255.252
+ipv6 add 2001:420:12::13/64
+ipv6 enable
+no shut
+int f0/0
+ip add 4.20.20.10 255.255.255.252
+ipv6 add 2001:420:8::10/64
+ipv6 enable
+no shut
+int lo0
+ip add 10.0.8.3 255.255.255.255
+no shut
+end
+write mem
+
+---------------------------------------------------------------------
+
+!Porto
+conf t
+ipv6 unicast-routing
+router bgp 9000
+bgp default local-preference 300
+address-family ipv4 unicast
+neighbor 4.20.20.1 remote-as 20000
+neighbor 4.20.20.1 remove-private-as
+neighbor 10.0.0.10 remote-as 65300
+neighbor 10.0.32.4 remote-as 9000 !Aveiro
+neighbor 10.0.32.4 next-hop-self
+neighbor 10.0.32.4 update-source Loopback 0
+neighbor 10.0.32.5 remote-as 9000 !Oeiras
+neighbor 10.0.32.5 next-hop-self
+neighbor 10.0.32.5 update-source Loopback 0
+neighbor 10.0.32.2 remote-as 9000 !Lisboa
+neighbor 10.0.32.2 next-hop-self
+neighbor 10.0.32.2 update-source Loopback 0
+
+address-family ipv6 unicast
+redistribute ospf 1
+neighbor 2001:420:0::1 remote-as 20000
+neighbor 2001:420:0::1 remove-private-as
+neighbor 2001:420:0::1 activate
+neighbor 2001:200:8::10 remote-as 65300
+neighbor 2001:200:8::10 activate
+neighbor 2001:200:0:FFFE::4 remote-as 9000  !Aveiro
+neighbor 2001:200:0:FFFE::4 next-hop-self
+neighbor  2001:200:0:FFFE::4 update-source Loopback 0
+neighbor 2001:200:0:FFFE::5 remote-as 9000  !Oeiras
+neighbor 2001:200:0:FFFE::5 next-hop-self
+neighbor  2001:200:0:FFFE::5 update-source Loopback 0
+neighbor 2001:200:0:FFFE::2 remote-as 9000  !Lisboa
+neighbor 2001:200:0:FFFE::2 next-hop-self
+neighbor  2001:200:0:FFFE::2 update-source Loopback 0
+int f1/0
+!BGP
+ip add 10.0.0.9 255.255.255.252
+ipv6 add 2001:200:8::9/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/1
+ip ospf 1 area 0
+ip add 10.0.16.1 255.255.240.0
+ipv6 add 2001:200:0::1/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/0
+ip add 4.20.20.2 255.255.255.252
+ipv6 add 2001:420:0::2/64
+ipv6 enable
+no shut
+int lo0
+ip ospf 1 area 0
+ip add 10.0.32.1 255.255.255.255
+ipv6 address 2001:200:0:FFFE::1/128
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+end
+
+!OSPF redistribute
+conf t
+router bgp 9000
+redistribute ospf 1
+router ospf 1
+default-information originate always
+distance 220
+
+! BGP non transit ISP X
+conf t
+ip as-path access-list 1 permit ^$
+ip as-path access-list 1 permit _65300_
+route-map routes-out
+match as-path 1
+router bgp 9000
+address-family ipv4 unicast
+neighbor 4.20.20.1 route-map routes-out out
+address-family ipv6 unicast
+neighbor 2001:420:0::1 route-map routes-out out
+end
+
+! deny private networks
+conf t
+ip access-list standard fOut-priv-default
+10 deny 10.0.0.0 0.0.255.255
+100 permit any
+router bgp 9000
+address-family ipv4 unicast
+neighbor 4.20.20.1 distribute-list fOut-priv-default out
+neighbor 10.0.0.10 distribute-list fOut-priv-default out
+end
+
+! Deny Sintra traffic from outer routers
+conf t
+ip prefix-list PL-SINTRA seq 10 deny 210.0.1.0/24
+ip prefix-list PL-SINTRA seq 100 permit 0.0.0.0/0 le 32
+ipv6 prefix-list PL-SINTRA-IPV6 seq 10 deny 2100:210::/64
+ipv6 prefix-list PL-SINTRA-IPV6 seq 100 permit ::/0 le 128
+router bgp 9000
+address-family ipv4 unicast
+neighbor 4.20.20.1 prefix-list PL-SINTRA in
+address-family ipv6 unicast
+neighbor 2001:420:0::1 prefix-list PL-SINTRA-IPV6 in
+end
+
+!Deny default routes
+conf t
+ipv6 prefix-list PL-DEFAULT-IPV6 seq 16 deny ::/0
+router bgp 9000
+address-family ipv6 unicast
+neighbor 2001:420:0::1 prefix-list PL-DEFAULT-IPV6 out
+end
+wr me
+
+
+---------------------------------------------------------------------
+
+!Lisboa
+conf t
+ipv6 unicast-routing
+ip cef
+mpls ip
+mpls traffic-eng tunnels
+router bgp 9000
+address-family ipv4 unicast
+neighbor 4.20.20.5 remote-as 20000
+neighbor 4.20.20.5 remove-private-as
+neighbor 4.20.20.13 remote-as 30000
+neighbor 4.20.20.13 remove-private-as
+neighbor 10.0.32.5 remote-as 9000 !Oeiras
+neighbor 10.0.32.5 next-hop-self
+neighbor 10.0.32.5 update-source Loopback 0
+neighbor 10.0.32.4 remote-as 9000 !Aveiro
+neighbor 10.0.32.4 next-hop-self
+neighbor 10.0.32.4 update-source Loopback 0
+neighbor 10.0.32.1 remote-as 9000 !Porto
+neighbor 10.0.32.1 next-hop-self
+neighbor 10.0.32.1 update-source Loopback 0
+
+address-family ipv6 unicast
+redistribute ospf 1
+neighbor 2001:420:12::13 remote-as 30000    !Sintra
+neighbor 2001:420:12::13 activate
+neighbor 2001:420:12::13 remove-private-as
+neighbor 2001:420:4::5 remote-as 20000      !London
+neighbor 2001:420:4::5 activate
+neighbor 2001:420:4::5 remove-private-as
+neighbor 2001:200:0:FFFE::1 remote-as 9000  !Porto
+neighbor 2001:200:0:FFFE::1 next-hop-self
+neighbor 2001:200:0:FFFE::1 update-source Loopback 0
+neighbor 2001:200:0:FFFE::4 remote-as 9000  !Aveiro
+neighbor 2001:200:0:FFFE::4 next-hop-self
+neighbor 2001:200:0:FFFE::4 update-source Loopback 0
+neighbor 2001:200:0:FFFE::5 remote-as 9000  !Oeiras
+neighbor 2001:200:0:FFFE::5 next-hop-self
+neighbor 2001:200:0:FFFE::5 update-source Loopback 0
+
+int f1/0
+ip ospf 1 area 0
+ip add 192.172.1.1 255.255.255.0
+ipv6 add 2001:200:172::1/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f1/1
+ip ospf 1 area 0
+mpls ip
+mpls traffic-eng tunnels    !MPLS
+ip rsvp bandwidth 4096 4096 !MPLS
+ip add 10.0.16.2 255.255.240.0
+ipv6 add 2001:200:0::2/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f2/0
+ip ospf 1 area 0
+mpls ip
+mpls traffic-eng tunnels    !MPLS
+ip rsvp bandwidth 2048 2048 !MPLS
+ip add 10.0.0.13 255.255.255.252
+ipv6 add 2001:200:12::13/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/0
+ip add 4.20.20.14 255.255.255.252
+ipv6 add 2001:420:12::14/64
+no shut
+int f0/1
+ip add 4.20.20.6 255.255.255.252
+ipv6 add 2001:420:4::6/64
+no shut
+int lo0
+ip ospf 1 area 0
+ip add 10.0.32.2 255.255.255.255
+ipv6 address 2001:200:0:FFFE::2/128
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+end
+
+!MPLS
+conf t
+router ospf 1
+mpls traffic-eng area 0                
+mpls traffic-eng router-id Loopback 0
+end
+
+! BGP non transit ISP X
+conf t
+ip as-path access-list 1 permit ^$
+ip as-path access-list 1 permit _65300_
+route-map routes-out
+match as-path 1
+router bgp 9000
+address-family ipv4 unicast
+neighbor 4.20.20.5 route-map routes-out out
+neighbor 4.20.20.13 route-map routes-out out
+address-family ipv6 unicast
+neighbor 2001:420:4::5 route-map routes-out out
+neighbor 2001:420:12::13 route-map routes-out out
+end
+write mem
+
+!OSPF redistribute
+conf t
+router bgp 9000
+redistribute ospf 1
+router ospf 1
+distance 220
+
+conf t
+ip access-list standard fOut-priv-default
+10 deny 10.0.0.0 0.0.255.255
+100 permit any
+router bgp 9000
+address-family ipv4 unicast
+neighbor 4.20.20.5 distribute-list fOut-priv-default out
+neighbor 4.20.20.13 distribute-list fOut-priv-default out
+end
+
+!L2&L3 traffic
+conf t
+ip prefix-list PL-L2-TRAFFIC seq 10 permit 200.200.1.0/24
+ip access-list standard ACL-PERMIT-ALL
+100 permit any
+!Oeiras
+route-map RM-L2-TRAFFIC-O permit 10
+match ip address prefix-list PL-L2-TRAFFIC
+set local-preference 400
+route-map RM-L2-TRAFFIC-O permit 20
+match ip address ACL-PERMIT-ALL
+set local-preference 200
+exit
+!Aveiro
+route-map RM-L2-TRAFFIC-A permit 10
+match ip address prefix-list PL-L2-TRAFFIC
+set local-preference 200
+route-map RM-L2-TRAFFIC-A permit 20
+match ip address ACL-PERMIT-ALL
+set local-preference 200
+exit
+
+router bgp 9000
+address-family ipv4 unicast
+neighbor 10.0.32.5 route-map RM-L2-TRAFFIC-O out
+neighbor 10.0.32.4 route-map RM-L2-TRAFFIC-A out
+end
+
+!Deny default routes
+conf t
+ipv6 prefix-list PL-DEFAULT-IPV6 seq 16 deny ::/0
+router bgp 9000
+address-family ipv6 unicast
+neighbor 2001:420:4::1 prefix-list PL-DEFAULT-IPV6 out
+neighbor 2001:420:12::13 prefix-list PL-DEFAULT-IPV6 out
+end
+wr me
+
+!Outside traffic preference
+conf t
+ip access-list standard ACL-PERMIT-REST
+10 deny 210.0.1.0 0.0.0.255
+100 permit any
+exit
+ip prefix-list PL-L2-TRAFFIC seq 10 permit 200.200.1.0/24
+route-map RM-OUTSIDE-ROUTES permit 10
+match ip address prefix-list PL-L2-TRAFFIC
+set local-preference 300
+route-map RM-OUTSIDE-ROUTES permit 20
+match ip address ACL-PERMIT-REST
+set local-preference 200
+exit
+
+ipv6 prefix-list PL-PERMIT-REST-ipv6 seq 10 deny 2100:210::/48 le 128
+ipv6 prefix-list PL-PERMIT-REST-ipv6 seq 100 permit ::/0 le 128
+ipv6 prefix-list PL-L2-TRAFFIC-IPV6 seq 10 permit 2100:200:200::/48
+route-map RM-OUTSIDE-ROUTES-IPV6 permit 10
+match ipv6 address prefix-list PL-L2-TRAFFIC-IPV6
+set local-preference 300
+route-map RM-OUTSIDE-ROUTES-IPV6 permit 20
+match ipv6 address PL-PERMIT-REST-IPV6
+set local-preference 200
+exit
+router bgp 9000
+address-family ipv4 unicast
+neighbor 4.20.20.5 route-map RM-OUTSIDE-ROUTES in
+!neighbor 4.20.20.5 route-map RM-OUTSIDE-ROUTES out
+address-family ipv6 unicast
+neighbor 2001:420:4::5 route-map RM-OUTSIDE-ROUTES-IPV6 in
+neighbor 2001:420:12::13 route-map RM-OUTSIDE-ROUTES-IPV6 out
+
+end
+wr me
+
+
+!TUNNEL B1-LISBOA
+conf t
+int tunnel 1
+no shut
+ip unnumbered Loopback0
+tunnel destination 10.0.32.7
+tunnel mode mpls traffic-eng
+tunnel mpls traffic-eng bandwidth 2048
+tunnel mpls traffic-eng path-option 1 dynamic
+exit
+ip explicit-path name path1 enable
+next-address 10.0.16.3
+next-address 10.0.0.22
+end
+
+!Voip TRAFFIC
+conf t
+access-list 101 permit ip any 130.1.1.0 0.0.0.63
+route-map RM-VOIP-TRAFFIC permit 20
+match ip address 101
+set int tunnel 1
+!set int verify-availability
+exit
+int f1/0
+ip policy route-map RM-VOIP-TRAFFIC
+end
+
+wr mem
+
+
+
+---------------------------------------------------------------------
+
+!EmpC
+conf t
+ipv6 unicast-routing
+router bgp 65300
+address-family ipv4 unicast
+neighbor 10.0.0.9 remote-as 9000
+network 140.1.1.0 mask 255.255.255.0
+
+address-family ipv6 unicast
+neighbor 2001:200:8::9 remote-as 9000
+network 2001:140::/48
+int f0/0
+!BGP
+ip add 10.0.0.10 255.255.255.252
+ipv6 add 2001:200:8::10/64
+ipv6 enable
+no shut
+int f0/1
+ip add 140.1.1.1 255.255.255.0
+ipv6 add 2001:140::1/64
+ipv6 enable
+no shut
+int lo0
+ip add 10.0.32.3 255.255.255.255
+no shut
+end
+write mem
+
+---------------------------------------------------------------------
+
+!Aveiro
+conf t
+ipv6 unicast-routing
+ip cef
+mpls traffic-eng tunnels
+router bgp 9000
+neighbor 10.0.32.1 remote-as 9000 !Porto
+neighbor 10.0.32.1 next-hop-self
+neighbor 10.0.32.1 update-source Loopback 0
+neighbor 10.0.32.2 remote-as 9000 !Lisboa
+neighbor 10.0.32.2 next-hop-self
+neighbor 10.0.32.2 update-source Loopback 0
+neighbor 10.0.32.5 remote-as 9000 !Oeiras
+neighbor 10.0.32.5 next-hop-self
+neighbor 10.0.32.5 update-source Loopback 0
+address-family ipv6 unicast
+neighbor 2001:200:0:FFFE::1 remote-as 9000 
+neighbor 2001:200:0:FFFE::1 next-hop-self
+neighbor 2001:200:0:FFFE::1 update-source Loopback 0
+neighbor 2001:200:0:FFFE::2 remote-as 9000 
+neighbor 2001:200:0:FFFE::2 next-hop-self
+neighbor 2001:200:0:FFFE::2 update-source Loopback 0
+neighbor 2001:200:0:FFFE::5 remote-as 9000 
+neighbor 2001:200:0:FFFE::5 next-hop-self
+neighbor 2001:200:0:FFFE::5 update-source Loopback 0
+
+int f0/0
+mpls ip
+ip ospf 1 area 0
+ip add 10.0.0.17 255.255.255.252
+ipv6 add 2001:200:16::17/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/1
+ip ospf 1 area 0
+mpls traffic-eng tunnels    !MPLS
+ip rsvp bandwidth 4096 4096 !MPLS
+ip add 10.0.0.21 255.255.255.252
+ipv6 add 2001:200:20::21/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f1/0
+ip ospf 1 area 0
+mpls ip
+mpls traffic-eng tunnels    !MPLS
+ip rsvp bandwidth 4096 4096 !MPLS
+ip add 10.0.16.3 255.255.240.0
+ipv6 add 2001:200:0::3/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int lo0
+ip ospf 1 area 0
+ip add 10.0.32.4 255.255.255.255
+ipv6 add 2001:200:0:FFFE::4/128
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+end
+
+!MPLS
+conf t
+router ospf 1
+mpls traffic-eng area 0                
+mpls traffic-eng router-id Loopback 0
+end
+
+!VPN
+conf t
+ip vrf VPN-1
+rd 9000:1
+route-target export 9000:1
+route-target import 9000:1
+exit
+int f0/0
+ip vrf forwarding VPN-1
+ip add 10.0.0.17 255.255.255.252
+exit
+router bgp 9000
+bgp router-id 4.4.4.4
+!neighbor 10.0.32.5 remote-as 9000
+!neighbor 10.0.32.5 update-source Loopback0
+address-family vpnv4 
+neighbor 10.0.32.5 activate
+neighbor 10.0.32.5 send-community both
+exit
+address-family ipv4 vrf VPN-1 
+redistribute connected
+redistribute static
+exit
+ip route 120.1.1.0 255.255.255.128 f0/0 10.0.0.18
+ip route 10.0.0.16 255.255.255.252 f0/0
+ip route vrf VPN-1 0.0.0.0 0.0.0.0 10.0.16.2 global
+ip route vrf VPN-1 120.1.1.0 255.255.255.128 f0/0 10.0.0.18
+router ospf 1
+redistribute static subnets
+end
+write mem
+
+---------------------------------------------------------------------
+
+!Oeiras
+conf t
+ipv6 unicast-routing
+ip cef
+mpls traffic-eng tunnels
+router bgp 9000
+neighbor 10.0.32.1 remote-as 9000 !Porto
+neighbor 10.0.32.1 next-hop-self
+neighbor 10.0.32.1 update-source Loopback 0
+neighbor 10.0.32.2 remote-as 9000 !Lisboa
+neighbor 10.0.32.2 next-hop-self
+neighbor 10.0.32.2 update-source Loopback 0
+neighbor 10.0.32.4 remote-as 9000 !Aveiro
+neighbor 10.0.32.4 next-hop-self
+neighbor 10.0.32.4 update-source Loopback 0
+
+address-family ipv6 unicast
+
+neighbor 2001:200:0:FFFE::1 remote-as 9000 
+neighbor 2001:200:0:FFFE::1 next-hop-self
+neighbor 2001:200:0:FFFE::1 update-source Loopback 0
+neighbor 2001:200:0:FFFE::2 remote-as 9000 
+neighbor 2001:200:0:FFFE::2 next-hop-self
+neighbor 2001:200:0:FFFE::2 update-source Loopback 0
+neighbor 2001:200:0:FFFE::4 remote-as 9000 
+neighbor 2001:200:0:FFFE::4 next-hop-self
+neighbor 2001:200:0:FFFE::4 update-source Loopback 0
+
+int f0/0
+ip ospf 1 area 0
+mpls traffic-eng tunnels    !MPLS
+ip rsvp bandwidth 2048 2048 !MPLS
+ip add 10.0.0.25 255.255.255.252
+ipv6 add 2001:200:24::25/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/1
+ip ospf 1 area 0
+ip add 10.0.0.29 255.255.255.252
+ipv6 add 2001:200:28::29/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f1/0
+ip ospf 1 area 0
+mpls ip
+mpls traffic-eng tunnels    !MPLS
+ip rsvp bandwidth 2048 2048 !MPLS
+ip add 10.0.0.14 255.255.255.252
+ipv6 add 2001:200:12::14/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int lo0
+ip ospf 1 area 0
+ip add 10.0.32.5 255.255.255.255
+ipv6 address 2001:200:0:FFFE::5/128
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+end
+
+!MPLS
+conf t
+router ospf 1
+mpls traffic-eng area 0                
+mpls traffic-eng router-id Loopback 0
+end
+
+!VPN
+conf t
+ip vrf VPN-1
+rd 9000:1
+route-target export 9000:1
+route-target import 9000:1
+exit
+int f0/1
+ip vrf forwarding VPN-1
+ip add 10.0.0.29 255.255.255.252
+exit
+router bgp 9000
+bgp router-id 5.5.5.5
+!neighbor 10.0.32.4 remote-as 9000
+!neighbor 10.0.32.4 update-source Loopback0
+address-family vpnv4 
+neighbor 10.0.32.4 activate
+neighbor 10.0.32.4 send-community both
+exit
+address-family ipv4 vrf VPN-1 
+redistribute connected
+redistribute static
+exit
+ip route 120.1.1.128 255.255.255.128 f0/1 10.0.0.30
+ip route 10.0.0.28 255.255.255.252 f0/1
+ip route vrf VPN-1 0.0.0.0 0.0.0.0 10.0.0.13 global
+ip route vrf VPN-1 120.1.1.128 255.255.255.128 f0/1 10.0.0.30
+router ospf 1 
+redistribute static subnets
+end
+write mem
+
+---------------------------------------------------------------------
+
+!EmpA1
+conf t
+ipv6 unicast-routing
+ip route 0.0.0.0 0.0.0.0 10.0.0.17
+int f0/0
+ip ospf 1 area 0
+ip add 10.0.0.18 255.255.255.252
+ipv6 add 2001:200:16::18/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/1
+ip ospf 1 area 0
+ip add 120.1.1.1 255.255.255.128
+ipv6 add 2001:120:0::1/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int lo0
+ip ospf 1 area 0
+ip add 10.0.32.6 255.255.255.255
+no shut
+end
+write mem
+
+---------------------------------------------------------------------
+
+!EmpA2
+conf t
+ipv6 unicast-routing
+ip route 0.0.0.0 0.0.0.0 10.0.0.29
+int f0/0
+ip ospf 1 area 0
+ip add 10.0.0.30 255.255.255.252
+ipv6 add 2001:200:28::30/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/1
+ip ospf 1 area 0
+ip add 120.1.1.129 255.255.255.128
+ipv6 add 2001:120:128::129/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int lo0
+ip ospf 1 area 0
+ip add 10.0.32.9 255.255.255.255
+no shut
+end
+write mem
+
+---------------------------------------------------------------------
+
+!EmpB1
+ipv6 unicast-routing
+conf t
+ip cef
+mpls traffic-eng tunnels
+int f0/0
+ip ospf 1 area 0
+mpls traffic-eng tunnels    !MPLS
+ip rsvp bandwidth 4096 4096 !MPLS
+ip add 10.0.0.22 255.255.255.252
+ipv6 add 2001:200:20::22/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/1
+ip ospf 1 area 0
+ip add 130.1.1.1 255.255.255.128
+ipv6 add 2001:130:0::1/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int lo0
+ip ospf 1 area 0
+ip add 10.0.32.7 255.255.255.255
+no shut
+end
+
+!MPLS
+conf t
+router ospf 1
+mpls traffic-eng area 0                
+mpls traffic-eng router-id Loopback 0
+end
+
+!TUNNEL B1-LISBOA
+conf t
+int tunnel 1
+no shut
+ip unnumbered Loopback0
+tunnel destination 10.0.32.2
+tunnel mode mpls traffic-eng
+tunnel mpls traffic-eng bandwidth 2048
+tunnel mpls traffic-eng path-option 1 dynamic
+exit
+ip explicit-path name path1 enable
+next-address 10.0.0.21
+next-address 10.0.16.2
+end
+
+!TUNNEL B1-B2
+ conf t
+ int tunnel 2
+ no shut
+ ip unnumbered Loopback0
+ tunnel destination 10.0.32.8
+ tunnel mode mpls traffic-eng
+ tunnel mpls traffic-eng bandwidth 2048
+ tunnel mpls traffic-eng path-option 1 dynamic
+ exit
+ ip explicit-path name path2 enable
+ next-address 10.0.0.21
+ next-address 10.0.16.2
+ next-address 10.0.0.14
+ next-address 10.0.0.26
+ end
+
+!Tunnel TRAFFIC
+conf t
+access-list 102 permit tcp 130.1.1.0 0.0.0.127 130.1.1.128 0.0.0.127 eq 80
+access-list 102 permit tcp 130.1.1.0 0.0.0.127 130.1.1.128 0.0.0.127 eq 443
+access-list 101 permit ip 130.1.1.0 0.0.0.63 192.172.1.0 0.0.0.255
+
+route-map RM-TUNNEL-TRAFFIC permit 10
+match ip address 102
+set int tunnel 2
+
+route-map RM-TUNNEL-TRAFFIC permit 20
+match ip address 101
+set int tunnel 1
+exit
+int f0/1
+ip policy route-map RM-TUNNEL-TRAFFIC
+end
+
+write mem
+
+---------------------------------------------------------------------
+
+!EmpB2
+conf t
+ipv6 unicast-routing
+ip cef
+mpls traffic-eng tunnels
+int f0/0
+ip ospf 1 area 0
+mpls traffic-eng tunnels    !MPLS
+ip rsvp bandwidth 2048 2048 !MPLS
+ip add 10.0.0.26 255.255.255.252
+ipv6 add 2001:200:24::26/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int f0/1
+ip ospf 1 area 0
+ip add 130.1.1.129 255.255.255.128
+ipv6 add 2001:130:128::129/64
+ipv6 enable
+ipv6 ospf 1 area 0
+no shut
+int lo0
+ip ospf 1 area 0
+ip add 10.0.32.8 255.255.255.255
+no shut
+end
+
+!MPLS
+conf t
+router ospf 1
+mpls traffic-eng area 0                
+mpls traffic-eng router-id Loopback 0
+end
+
+!TUNNEL B1-B2
+conf t
+int tunnel 2
+no shut
+ip unnumbered Loopback0
+tunnel destination 10.0.32.7
+tunnel mode mpls traffic-eng
+tunnel mpls traffic-eng bandwidth 2048
+tunnel mpls traffic-eng path-option 1 dynamic
+exit
+ip explicit-path name path2 enable
+next-address 10.0.0.25
+next-address 10.0.0.13
+next-address 10.0.16.3
+next-address 10.0.0.22
+end
+
+!WEB TRAFFIC
+conf t
+access-list 102 permit tcp 130.1.1.128 0.0.0.127 130.1.1.0 0.0.0.127 eq 80
+access-list 102 permit tcp 130.1.1.128 0.0.0.127 130.1.1.0 0.0.0.127 eq 443
+route-map RM-WEB-TRAFFIC permit 10
+match ip address 102
+set int tunnel 2
+!set int verify-availability
+exit
+int f0/1
+ip policy route-map RM-WEB-TRAFFIC
+end
+
+write mem
+
+
+!SERVER1
+sudo ifconfig eth0 192.172.1.2 netmask 255.255.255.0
+sudo route add default gw 192.172.1.1 eth0
+
+!SERVER2
+sudo ifconfig eth0 210.0.1.2 netmask 255.255.255.0
+sudo route add default gw 210.0.1.1 eth0
